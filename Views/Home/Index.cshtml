@@ -1,0 +1,116 @@
+﻿@model IEnumerable<Project_WS.Models.Staff>
+
+@{
+    ViewBag.Title = "Home Page";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <h2>Staff List</h2>
+        <!-- Search Box -->
+        <div class="form-group">
+            <div class="input-group">
+                <input id="searchInput" type="text" class="form-control pull-right" placeholder="Enter name / age to search">
+                <span class="input-group-btn">
+                    <button class="btn btn-default" id="searchBtn" type="button">
+                        Search
+                    </button>
+                </span>
+            </div><!-- /input-group -->
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Date of Birth</th>
+                    <th></th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var staff in Model)
+                {
+                    <tr>
+                        <td>@staff.Id</td>
+                        <td>@staff.FirstName</td>
+                        <td>@staff.LastName</td>
+                        <td>
+                            @(staff.Dob.HasValue? @staff.Dob.Value.ToShortDateString()
+                        :
+                        ""
+                        )
+                        </td>
+                        <td>
+                            @Html.ActionLink("Edit", "EditStaff", new { id = staff.Id })
+                        </td>
+                        <td>
+                            <button class="btn btn-danger delete-button" data-staff-id="@staff.Id" data-staff-name="@staff.FirstName @staff.LastName">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+    $(document).ready(function () {
+        $(".delete-button").on("click", function () {
+            var button = $(this); // Store the reference to the button
+
+            var staffId = button.data("staff-id");
+            var staffName = button.data("staff-name");
+
+            if (confirm("Confirm to delete " + staffName + "?")) {
+                $.ajax({
+                    url: '/Home/DeleteStaff/' + staffId,
+                    type: 'POST',   //IIS does not allow PUT and DELETE
+                    success: function (data) {
+                        if (data.success) {
+                            alert(data.message);
+                            button.closest("tr").remove();
+                        } else {
+                            alert("Error: " + data.message);
+                        }
+                    },
+                    error: function () {
+                        alert("An error occurred during deletion");
+                    }
+                });
+            }
+        });
+        function calculateAge(dateOfBirth) {
+            // Parse the date of birth string
+            var dob = Date.parse(dateOfBirth);
+
+            // Calculate the current date
+            var now = new Date();
+
+            // Calculate the time difference in milliseconds
+            var timeDiff = now - dob;
+
+            // Calculate the age in years
+            var age = new Date(timeDiff).getFullYear() - 1970;
+
+            return age;
+        }
+        $("#searchBtn").on("click", function () {
+            var searchTerm = $("#searchInput").val().toLowerCase().trim();
+            $("tbody tr").each(function () {
+                var firstName = $(this).find("td:nth-child(2)").text().toLowerCase()
+                var lastName = $(this).find("td:nth-child(3)").text().toLowerCase();
+                var dob = $(this).find("td:nth-child(4)").text().toLowerCase();
+                var age = calculateAge(dob);
+
+                if (firstName.includes(searchTerm) || lastName.includes(searchTerm) || age == searchTerm) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        });
+
+    });
+</script>
+
